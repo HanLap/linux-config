@@ -97,9 +97,8 @@ mySpacing = spacingRaw False
   (Border  3  3  3  3) True
 
 myLayout = mySpacing
-         $ mkToggle1 NOBORDERS
+         $ mkToggle (NOBORDERS ?? REFLECTX ?? EOT)
          $ tiled
-       ||| reflectHoriz tiled
        ||| Full   
     where
      -- default tiling algorithm partitions the screen into two panes
@@ -128,6 +127,7 @@ myConfig = desktopConfig
     }
 
 main = xmonad 
+     $ docks
      $ fullscreenSupport
        myConfig
 
@@ -151,6 +151,8 @@ myKeys conf@XConfig {XMonad.modMask = modm} = M.fromList $
     , ((modm .|. shiftMask, xK_c     ), kill)
     -- Rotate through the available layout algorithms
     , ((modm,               xK_space ), sendMessage NextLayout)
+    -- toggle horizontal reflect
+    , ((modm,               xK_v     ), sendMessage $ Toggle REFLECTX)
     -- toggle fullscreen
     , ((modm,               xK_Escape), do
                                           toggleWindowSpacingEnabled 
