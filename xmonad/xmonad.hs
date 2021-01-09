@@ -3,28 +3,18 @@ import System.Exit
 
 import qualified XMonad.StackSet as W
 import qualified Data.Map        as M
-import XMonad.Util.WorkspaceCompare
-import XMonad.Config.Xfce
 import XMonad.Hooks.Place
 import XMonad.Layout.Fullscreen
 import XMonad.Hooks.ManageDocks
 import Data.List
 import Data.Char
-import XMonad.Hooks.EwmhDesktops
-import XMonad.Layout.NoBorders
 import XMonad.Layout.Spacing
-import XMonad.Layout.LimitWindows
-import XMonad.Layout.Accordion
-import XMonad.Layout.Tabbed
-import XMonad.Layout.TwoPane
-import XMonad.Layout.TwoPanePersistent
 import XMonad.Util.SpawnOnce
 import XMonad.Config.Desktop
 import XMonad.Layout.Reflect
 import XMonad.Hooks.ManageHelpers
 import XMonad.Layout.MultiToggle
 import XMonad.Layout.MultiToggle.Instances
-import XMonad.Layout.LayoutModifier
 
 
 
@@ -98,8 +88,7 @@ mySpacing = spacingRaw False
 
 myLayout = mySpacing
          $ mkToggle (NOBORDERS ?? REFLECTX ?? EOT)
-         $ tiled
-       ||| Full   
+         $ tiled ||| Full   
     where
      -- default tiling algorithm partitions the screen into two panes
      tiled   = Tall nmaster delta ratio
