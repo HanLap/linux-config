@@ -1,0 +1,8 @@
+/** Basic config file **/
+
+configuration {
+  show-icons:         true;
+  icon-theme:         "candy-icons";
+  modi:               "run,drun,combi";
+  combi-modi:         "run,drun";
+}

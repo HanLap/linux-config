@@ -48,8 +48,10 @@ myWorkspaces = ["1", "2", "3", "4", "5", "6"]
 
 myStartupHook = do
     -- spawnOnce "redshift -O 4000k"
-    -- spawnOnce "feh --bg-center -g +-140--500 ~/.wallpapers/1.jpg"
+    spawnOnce "xsetroot -cursor_name left_ptr"
+    spawnOnce "feh --bg-center -g +-140--500 ~/.wallpapers/1.jpg"
     spawnOnce "picom -f"
+    spawnOnce "dunst"
     spawnOnce "tint2 -c ~/.config/tint2/clock.tint2rc"
     spawnOnce "tint2 -c ~/.config/tint2/workspaces.tint2rc"
     spawnOnce "dropbox"
@@ -70,14 +72,14 @@ myStartupHook = do
 -- 'className' and 'resource' are used below.
 --
 myManageHook = composeAll
-    [ 
+    [
       isFullscreen                      --> doFullFloat
     , title     =? "Whisker Menu"       --> doFloat
     , className =? "Gimp"               --> doFloat
     , resource  =? "desktop_window"     --> doIgnore
     , resource  =? "kdesktop"           --> doIgnore
     , resource  =? "Do"                 --> doIgnore   -- Gnome Do
-    , title     =? "Application Finder" --> placeHook (smart (0.5, 0.5)) <+> doFloat 
+    , title     =? "Application Finder" --> placeHook (smart (0.5, 0.5)) <+> doFloat
     ]
 
 
@@ -88,7 +90,7 @@ mySpacing = spacingRaw False
 
 myLayout = mySpacing
          $ mkToggle (NOBORDERS ?? REFLECTX ?? EOT)
-         $ tiled ||| Full   
+         $ tiled ||| Full
     where
      -- default tiling algorithm partitions the screen into two panes
      tiled   = Tall nmaster delta ratio
@@ -115,7 +117,7 @@ myConfig = desktopConfig
     , focusFollowsMouse  = True
     }
 
-main = xmonad 
+main = xmonad
      $ docks
      $ fullscreenSupport
        myConfig
@@ -128,14 +130,14 @@ myKeys conf@XConfig {XMonad.modMask = modm} = M.fromList $
     -- launch a terminal
     [ ((modm .|. shiftMask, xK_Return), spawn $ XMonad.terminal conf)
     -- launch application menu
-    , ((modm,               xK_p     ), spawn 
+    , ((modm,               xK_p     ), spawn
       "rofi -show drun -theme \"/home/hannah/.config/rofi/launcher/style\"")
     -- launch run menu
-    , ((modm .|. shiftMask, xK_p     ), spawn 
+    , ((modm .|. shiftMask, xK_p     ), spawn
       "rofi -show run -theme \"/home/hannah/.config/rofi/launcher/style\"")
     -- screenshot
-    , ((0,                  xK_Print ), spawn 
-      "import /tmp/import.png && xclip -selection c -t image/png -i /tmp/import.png")
+    , ((0,                  xK_Print ), spawn
+      "import png:- | xclip -selection c -t image/png -i")
     -- close focused window
     , ((modm .|. shiftMask, xK_c     ), kill)
     -- Rotate through the available layout algorithms
@@ -144,10 +146,10 @@ myKeys conf@XConfig {XMonad.modMask = modm} = M.fromList $
     , ((modm,               xK_v     ), sendMessage $ Toggle REFLECTX)
     -- toggle fullscreen
     , ((modm,               xK_Escape), do
-                                          toggleWindowSpacingEnabled 
+                                          toggleWindowSpacingEnabled
                                           toggleScreenSpacingEnabled
                                           sendMessage $ Toggle NOBORDERS)
- 
+
     --  Reset the layouts on the current workspace to default
     , ((modm .|. shiftMask, xK_space ), setLayout $ XMonad.layoutHook conf)
     -- Resize viewed windows to the correct size

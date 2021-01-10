@@ -1,0 +1,21 @@
+<eww>
+  <definitions>
+    <def name="clock">
+      {{date}}
+    </def>
+  </definitions>
+
+  <variables>
+    <script-var name="date" inverval="1s">date "+%H:%M:%S"</script-var>
+  </variables>
+
+
+  <windows>
+    <window name="clock" focusable="false">
+      <geometry anchor="top right" x="-10px" y="5px" />
+      <widget>
+        <clock />
+      </widget>
+    </window>
+  </windows>
+</eww>
