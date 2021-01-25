@@ -1,8 +1,6 @@
 import XMonad
 import System.Exit
 
-import qualified XMonad.StackSet as W
-import qualified Data.Map        as M
 import XMonad.Hooks.Place
 import XMonad.Layout.Fullscreen
 import XMonad.Hooks.ManageDocks
@@ -15,6 +13,18 @@ import XMonad.Layout.Reflect
 import XMonad.Hooks.ManageHelpers
 import XMonad.Layout.MultiToggle
 import XMonad.Layout.MultiToggle.Instances
+import XMonad.Layout.Tabbed
+import Graphics.X11.ExtraTypes.XF86
+import XMonad.Hooks.EwmhDesktops
+import XMonad.Util.NamedScratchpad
+
+
+import qualified XMonad.StackSet as W
+import qualified Data.Map        as M
+import XMonad.Hooks.DynamicLog
+import XMonad.Layout.WindowNavigation
+import XMonad.Layout.SubLayouts
+import XMonad.Layout.BoringWindows
 
 
 
@@ -40,14 +50,14 @@ myTerminal = "alacritty"
 
 myModMask = mod4Mask
 
-myBorderWith = 2
-myFocusedBorderColor = "#5faee3"
+myBorderWith = 1
+myFocusedBorderColor = "#89ddff"
 myNormalBorderColor = "#1b1d24"
 
 myWorkspaces = ["1", "2", "3", "4", "5", "6"]
 
 myStartupHook = do
-    -- spawnOnce "redshift -O 4000k"
+    spawnOnce "redshift -O 4000k"
     spawnOnce "xsetroot -cursor_name left_ptr"
     spawnOnce "feh --bg-center -g +-140--500 ~/.wallpapers/1.jpg"
     spawnOnce "picom -f"
@@ -74,23 +84,59 @@ myStartupHook = do
 myManageHook = composeAll
     [
       isFullscreen                      --> doFullFloat
-    , title     =? "Whisker Menu"       --> doFloat
-    , className =? "Gimp"               --> doFloat
+    -- , className =? "Pavucontrol"        --> customFloating (W.RationalRect 0.2 0.05 0.6 0.4)
     , resource  =? "desktop_window"     --> doIgnore
-    , resource  =? "kdesktop"           --> doIgnore
-    , resource  =? "Do"                 --> doIgnore   -- Gnome Do
     , title     =? "Application Finder" --> placeHook (smart (0.5, 0.5)) <+> doFloat
+    , namedScratchpadManageHook scratchpads
     ]
+
+
+scratchpads :: NamedScratchpads
+scratchpads = 
+  [ NS { name  = "audio"
+       , cmd   = "pavucontrol"
+       , query = className  =?. "Pavucontrol"
+       , hook  = customFloating (W.RationalRect 0.2 0.03 0.6 0.4)
+       }
+  , NS { name  = "password"
+       , cmd   = "/opt/Bitwarden/bitwarden"
+       , query = className =?. "Bitwarden"
+       , hook  = customFloating (W.RationalRect 0.2 0.03 0.6 0.6)
+       }
+  ]
 
 
 
 mySpacing = spacingRaw False
-  (Border 40 10 10 10) True
-  (Border  3  3  3  3) True
+                       (Border 40 10 10 10) True
+                       (Border  3  3  3  3) True
 
-myLayout = mySpacing
-         $ mkToggle (NOBORDERS ?? REFLECTX ?? EOT)
-         $ tiled ||| Full
+decoTheme :: Theme
+decoTheme = def {         activeColor = "#1b1d24"
+                ,       inactiveColor = "#1b1d24"
+                ,         urgentColor = "#1b1d24"
+                ,   activeBorderColor = "#89ddff"
+                , inactiveBorderColor = "#1b1d24"
+                ,   urgentBorderColor = "#89ddff"
+                ,     activeTextColor = "#89ddff"
+                ,   inactiveTextColor = "#89ddff"
+                ,     urgentTextColor = "#89ddff"
+                ,            fontName = "xft:terminus:size=12"
+                }
+
+
+
+myLayout = 
+        mySpacing
+         $ mkToggle (NOBORDERS ?? EOT)
+         $ mkToggle (REFLECTX  ?? EOT)
+         $ windowNavigation 
+         $ boringWindows 
+         $ subLayout [0] (tabbed shrinkText decoTheme)
+         $  tiled 
+      --  ||| Full 
+       ||| tabbed shrinkText decoTheme
+
     where
      -- default tiling algorithm partitions the screen into two panes
      tiled   = Tall nmaster delta ratio
@@ -109,17 +155,19 @@ myConfig = desktopConfig
     , borderWidth        = myBorderWith
     , focusedBorderColor = myFocusedBorderColor
     , normalBorderColor  = myNormalBorderColor
+    , focusFollowsMouse  = True
     , keys               = myKeys
     , workspaces         = myWorkspaces
     , layoutHook         = myLayout
     , manageHook         = myManageHook
     , startupHook        = myStartupHook
-    , focusFollowsMouse  = True
+    , logHook            = dynamicLog
     }
 
 main = xmonad
+     $ ewmh
      $ docks
-     $ fullscreenSupport
+    --  $ fullscreenSupport
        myConfig
 
 
@@ -130,25 +178,19 @@ myKeys conf@XConfig {XMonad.modMask = modm} = M.fromList $
     -- launch a terminal
     [ ((modm .|. shiftMask, xK_Return), spawn $ XMonad.terminal conf)
     -- launch application menu
-    , ((modm,               xK_p     ), spawn
-      "rofi -show drun -theme \"/home/hannah/.config/rofi/launcher/style\"")
+    , ((modm,               xK_p     ), spawn $ rofi "drun")
     -- launch run menu
-    , ((modm .|. shiftMask, xK_p     ), spawn
-      "rofi -show run -theme \"/home/hannah/.config/rofi/launcher/style\"")
+    , ((modm .|. shiftMask, xK_p     ), spawn $ rofi "run")
     -- screenshot
-    , ((0,                  xK_Print ), spawn
-      "import png:- | xclip -selection c -t image/png -i")
+    , ((0,                  xK_Print ), snip)
     -- close focused window
     , ((modm .|. shiftMask, xK_c     ), kill)
     -- Rotate through the available layout algorithms
     , ((modm,               xK_space ), sendMessage NextLayout)
     -- toggle horizontal reflect
-    , ((modm,               xK_v     ), sendMessage $ Toggle REFLECTX)
+    , ((modm .|. shiftMask, xK_v     ), sendMessage $ Toggle REFLECTX)
     -- toggle fullscreen
-    , ((modm,               xK_Escape), do
-                                          toggleWindowSpacingEnabled
-                                          toggleScreenSpacingEnabled
-                                          sendMessage $ Toggle NOBORDERS)
+    , ((modm,               xK_Escape), toggleFullscreen)
 
     --  Reset the layouts on the current workspace to default
     , ((modm .|. shiftMask, xK_space ), setLayout $ XMonad.layoutHook conf)
@@ -165,9 +207,9 @@ myKeys conf@XConfig {XMonad.modMask = modm} = M.fromList $
     -- Swap the focused window and the master window
     , ((modm,               xK_Return), windows W.swapMaster)
     -- Swap the focused window with the next window
-    , ((modm .|. shiftMask, xK_d     ), windows W.swapDown  )
+    , ((modm .|. shiftMask, xK_d     ), windows W.swapDown)
     -- Swap the focused window with the previous window
-    , ((modm .|. shiftMask, xK_a     ), windows W.swapUp    )
+    , ((modm .|. shiftMask, xK_a     ), windows W.swapUp)
     -- Shrink the master area
     , ((modm,               xK_h     ), sendMessage Shrink)
     -- Expand the master area
@@ -175,11 +217,28 @@ myKeys conf@XConfig {XMonad.modMask = modm} = M.fromList $
     -- Push window back into tiling
     , ((modm,               xK_t     ), withFocused $ windows . W.sink)
     -- Increment the number of windows in the master area
-    , ((modm              , xK_period ), sendMessage (IncMasterN 1))
+    , ((modm              , xK_period), sendMessage (IncMasterN 1))
     -- , ((modm              , xK_period ), increaseLimit)
     -- Deincrement the number of windows in the master area
-    , ((modm              , xK_comma), sendMessage (IncMasterN (-1)))
+    , ((modm              , xK_comma ), sendMessage (IncMasterN (-1)))
     -- , ((modm              , xK_comma), decreaseLimit)
+
+
+    , ((modm .|. controlMask, xK_m), withFocused (sendMessage . MergeAll))
+    , ((modm .|. controlMask, xK_u), withFocused (sendMessage . UnMerge))
+
+
+    -- media keys
+    , ((0, xF86XK_AudioLowerVolume   ), spawn "pactl set-sink-volume @DEFAULT_SINK@ -5%")
+    , ((0, xF86XK_AudioRaiseVolume   ), spawn "pactl set-sink-volume @DEFAULT_SINK@ +5%")
+    , ((0, xF86XK_AudioMute          ), spawn "pactl set-sink-mute @DEFAULT_SINK@ toggle")
+    , ((0, xF86XK_AudioPlay          ), spawn "playerctl -p playerctld play-pause")
+    , ((0, xF86XK_AudioPrev          ), spawn "playerctl -p playerctld previous")
+    , ((0, xF86XK_AudioNext          ), spawn "playerctl -p playerctld next")
+
+    -- scratchpads
+    , ((modm              , xK_v     ), namedScratchpadAction scratchpads  "audio")
+    , ((modm              , xK_b     ), namedScratchpadAction scratchpads  "password")
 
     -- Toggle the status bar gap
     -- Use this binding with avoidStruts from Hooks.ManageDocks.
@@ -188,9 +247,7 @@ myKeys conf@XConfig {XMonad.modMask = modm} = M.fromList $
     -- , ((modm              , xK_b     ), sendMessage ToggleStruts)
 
     -- Quit xmonad
-    -- , ((modm .|. shiftMask, xK_F12   ), spawn "xfce4-session-logout")
     , ((modm .|. shiftMask, xK_r     ), io (exitWith ExitSuccess))
-
     -- Restart xmonad
     , ((modm              , xK_r     ), spawn "xmonad --recompile; xmonad --restart")
 
@@ -213,8 +270,18 @@ myKeys conf@XConfig {XMonad.modMask = modm} = M.fromList $
     -- mod-shift-{w,e,r}, Move client to screen 1, 2, or 3
     --
     [((m .|. modm, key), screenWorkspace sc >>= flip whenJust (windows . f))
-        | (key, sc) <- zip [xK_q, xK_e] [0..]
+        | (key, sc) <- zip [xK_q, xK_e, xK_w] [0..]
         , (f, m) <- [(W.view, 0), (W.shift, shiftMask)]]
+    where 
+      rofi :: String -> String
+      rofi show = "rofi -show " ++ show ++ " -theme \"/home/hannah/.config/rofi/launcher/style\""  
+
+      snip = spawn "import png:- | xclip -selection c -t image/png -i"
+
+      toggleFullscreen = do toggleWindowSpacingEnabled
+                            toggleScreenSpacingEnabled
+                            sendMessage $ Toggle NOBORDERS
+
 
 help = unlines ["The default modifier key is 'alt'. Default keybindings:",
     "",

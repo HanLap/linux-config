@@ -72,7 +72,7 @@ border_color_pressed = #000000 100
 
 #-------------------------------------
 # Panel
-panel_items = :E:
+panel_items = E
 panel_size = 15% 28
 panel_margin = 226 8
 panel_padding = 12 6 10
@@ -82,15 +82,15 @@ panel_dock = 1
 panel_pivot_struts = 0
 panel_position = top right horizontal
 panel_layer = bottom
-panel_monitor = all
-panel_shrink = 1
+panel_monitor = 0
+panel_shrink = 0
 autohide = 0
 autohide_show_timeout = 0
 autohide_hide_timeout = 0.5
 autohide_height = 2
 strut_policy = none
 panel_window_name = tint2
-disable_transparency = 1
+disable_transparency = 0
 mouse_effects = 1
 font_shadow = 0
 mouse_hover_icon_asb = 100 0 10
@@ -101,7 +101,7 @@ scale_relative_to_screen_height = 0
 #-------------------------------------
 # Executor 1
 execp = new
-execp_command = mpstat --dec=0 | awk 'END{print 100 - $13 "%"}'
+execp_command = ~/Repositories/linux-config/tint2/scripts/spotify.sh
 execp_interval = 1
 execp_has_icon = 0
 execp_cache_icon = 1
@@ -112,10 +112,10 @@ execp_rclick_command =
 execp_mclick_command = 
 execp_uwheel_command = 
 execp_dwheel_command = 
-execp_font_color = #ffffff 100
+execp_font_color = #1DB954 100
 execp_padding = 0 0
 execp_background_id = -1
-execp_centered = 0
+execp_centered = 1
 execp_icon_w = 0
 execp_icon_h = 0
 
