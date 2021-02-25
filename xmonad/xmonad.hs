@@ -25,6 +25,8 @@ import XMonad.Hooks.DynamicLog
 import XMonad.Layout.WindowNavigation
 import XMonad.Layout.SubLayouts
 import XMonad.Layout.BoringWindows
+import XMonad.Actions.SpawnOn
+import System.Process
 
 
 
@@ -61,10 +63,16 @@ myStartupHook = do
     spawnOnce "xsetroot -cursor_name left_ptr"
     spawnOnce "feh --bg-center -g +-140--500 ~/.wallpapers/1.jpg"
     spawnOnce "picom -f"
-    spawnOnce "dunst"
+    -- spawnOnce "dunst"
     spawnOnce "tint2 -c ~/.config/tint2/clock.tint2rc"
     spawnOnce "tint2 -c ~/.config/tint2/workspaces.tint2rc"
     spawnOnce "dropbox"
+
+
+    spawn "pulseaudio --start" -- @TODO comment out
+    spawnOn "1" "discord"
+    spawnOn "6" "/opt/Element/element-desktop"
+    spawnOn "6" "/opt/Signal/signal-desktop"
 
 ------------------------------------------------------------------------
 -- Window rules:
@@ -81,12 +89,16 @@ myStartupHook = do
 -- To match on the WM_NAME, you can use 'title' in the same way that
 -- 'className' and 'resource' are used below.
 --
-myManageHook = composeAll
+myManageHook = 
+      manageSpawn
+  <+> composeAll
     [
-      isFullscreen                      --> doFullFloat
+      isFullscreen                        --> doFullFloat
     -- , className =? "Pavucontrol"        --> customFloating (W.RationalRect 0.2 0.05 0.6 0.4)
-    , resource  =? "desktop_window"     --> doIgnore
-    , title     =? "Application Finder" --> placeHook (smart (0.5, 0.5)) <+> doFloat
+    , resource  =?. "desktop_window"      --> doIgnore
+    , className =?. "platform-Emulicious" --> doFloat
+    , className =?. "discord"             --> doShift "1"
+    , title     =?. "Application Finder"  --> placeHook (smart (0.5, 0.5)) <+> doFloat
     , namedScratchpadManageHook scratchpads
     ]
 
@@ -103,6 +115,11 @@ scratchpads =
        , query = className =?. "Bitwarden"
        , hook  = customFloating (W.RationalRect 0.2 0.03 0.6 0.6)
        }
+  , NS { name  = "terminal"
+       , cmd   = "alacritty --class scratch --title scratch"
+       , query = resource =?. "scratch"
+       , hook  = customFloating (W.RationalRect 0.2 0.03 0.6 0.6)
+       }
   ]
 
 
@@ -115,11 +132,11 @@ decoTheme :: Theme
 decoTheme = def {         activeColor = "#1b1d24"
                 ,       inactiveColor = "#1b1d24"
                 ,         urgentColor = "#1b1d24"
-                ,   activeBorderColor = "#89ddff"
+                ,   activeBorderColor = "#1b1d24"
                 , inactiveBorderColor = "#1b1d24"
                 ,   urgentBorderColor = "#89ddff"
                 ,     activeTextColor = "#89ddff"
-                ,   inactiveTextColor = "#89ddff"
+                ,   inactiveTextColor = "#666666"
                 ,     urgentTextColor = "#89ddff"
                 ,            fontName = "xft:terminus:size=12"
                 }
@@ -132,7 +149,7 @@ myLayout =
          $ mkToggle (REFLECTX  ?? EOT)
          $ windowNavigation 
          $ boringWindows 
-         $ subLayout [0] (tabbed shrinkText decoTheme)
+        --  $ subLayout [0] (tabbed shrinkText decoTheme)
          $  tiled 
       --  ||| Full 
        ||| tabbed shrinkText decoTheme
@@ -160,15 +177,19 @@ myConfig = desktopConfig
     , workspaces         = myWorkspaces
     , layoutHook         = myLayout
     , manageHook         = myManageHook
-    , startupHook        = myStartupHook
-    , logHook            = dynamicLog
+    , startupHook        = ewmhDesktopsStartup <+> myStartupHook
+    , logHook            = customLogHook <+> dynamicLog
     }
 
 main = xmonad
-     $ ewmh
      $ docks
     --  $ fullscreenSupport
        myConfig
+
+
+customLogHook :: X ()
+-- filter out NSP workspace that is used to hide scratchpads
+customLogHook = ewmhDesktopsLogHookCustom (filter ((/= "NSP") . W.tag)) 
 
 
 ------------------------------------------------------------------------
@@ -215,7 +236,7 @@ myKeys conf@XConfig {XMonad.modMask = modm} = M.fromList $
     -- Expand the master area
     , ((modm,               xK_l     ), sendMessage Expand)
     -- Push window back into tiling
-    , ((modm,               xK_t     ), withFocused $ windows . W.sink)
+    , ((modm .|. shiftMask, xK_t     ), withFocused $ windows . W.sink)
     -- Increment the number of windows in the master area
     , ((modm              , xK_period), sendMessage (IncMasterN 1))
     -- , ((modm              , xK_period ), increaseLimit)
@@ -239,6 +260,7 @@ myKeys conf@XConfig {XMonad.modMask = modm} = M.fromList $
     -- scratchpads
     , ((modm              , xK_v     ), namedScratchpadAction scratchpads  "audio")
     , ((modm              , xK_b     ), namedScratchpadAction scratchpads  "password")
+    , ((modm              , xK_t     ), namedScratchpadAction scratchpads  "terminal")
 
     -- Toggle the status bar gap
     -- Use this binding with avoidStruts from Hooks.ManageDocks.
@@ -247,7 +269,7 @@ myKeys conf@XConfig {XMonad.modMask = modm} = M.fromList $
     -- , ((modm              , xK_b     ), sendMessage ToggleStruts)
 
     -- Quit xmonad
-    , ((modm .|. shiftMask, xK_r     ), io (exitWith ExitSuccess))
+    , ((modm .|. shiftMask, xK_r     ), io exitSuccess)
     -- Restart xmonad
     , ((modm              , xK_r     ), spawn "xmonad --recompile; xmonad --restart")
 
